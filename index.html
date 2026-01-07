@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RedAlert AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin:0; font-family: Arial; background:#f5f7fa; }
+    header { background:#c62828; color:white; padding:15px; text-align:center; }
+    .page { display:none; padding:15px; }
+    .active { display:block; }
+    button { width:100%; padding:12px; margin-top:10px; background:#c62828; color:white; border:none; border-radius:5px; }
+    input, select { width:100%; padding:10px; margin-top:10px; }
+    .card { background:white; padding:15px; border-radius:10px; margin-bottom:10px; }
+
+    .map {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(135deg, #e3f2fd, #e8f5e9);
+      border-radius: 12px;
+    }
+
+    .pin {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 3px solid white;
+      display: none;
+    }
+
+    .pin-label {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .popup {
+      position: fixed; top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .popup-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+    }
+
+    .donor { border-bottom: 1px solid #ddd; padding: 8px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h2>🩸 RedAlert AI</h2>
+</header>
+
+<!-- HOME -->
+<div class="page active" id="home">
+  <div class="card">
+    <button onclick="showPage('register')">Register Donor</button>
+    <button onclick="showPage('requirement')">Find Donor</button>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="page" id="register">
+  <div class="card">
+    <h3>Register Donor</h3>
+    <input id="dname" placeholder="Name">
+    <select id="dblood">
+      <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
+      <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+    </select>
+    <select id="dcity">
+      <option>Kochi</option>
+      <option>Calicut</option>
+      <option>Trivandrum</option>
+      <option>Malappuram</option>
+    </select>
+    <button onclick="addDonor()">Save</button>
+    <button onclick="showPage('home')">Back</button>
+  </div>
+</div>
+
+<!-- REQUIREMENT -->
+<div class="page" id="requirement">
+  <div class="card">
+    <h3>Enter Requirement</h3>
+    <select id="reqblood">
+      <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
+      <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+    </select>
+    <select id="reqlocation">
+      <option>Kochi</option>
+      <option>Calicut</option>
+      <option>Trivandrum</option>
+      <option>Malappuram</option>
+    </select>
+    <button onclick="search()">Search</button>
+    <button onclick="showPage('home')">Back</button>
+  </div>
+</div>
+
+<!-- MAP -->
+<div class="page" id="map">
+  <div class="card">
+    <h3>Map View</h3>
+
+    <div class="map">
+
+      <div class="pin" id="pinKochi" style="top:55%; left:55%;" onclick="openCity('Kochi')">
+        <div class="pin-label">Kochi</div>
+      </div>
+
+      <div class="pin" id="pinCalicut" style="top:30%; left:52%;" onclick="openCity('Calicut')">
+        <div class="pin-label">Calicut</div>
+      </div>
+
+      <div class="pin" id="pinTrivandrum" style="top:80%; left:50%;" onclick="openCity('Trivandrum')">
+        <div class="pin-label">TVM</div>
+      </div>
+
+      <div class="pin" id="pinMalappuram" style="top:40%; left:58%;" onclick="openCity('Malappuram')">
+        <div class="pin-label">Malappuram</div>
+      </div>
+
+    </div>
+
+    <button onclick="showPage('home')">Back</button>
+  </div>
+</div>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+  <div class="popup-content">
+    <h3 id="popTitle"></h3>
+    <div id="popBody"></div>
+    <button onclick="closePop()">Close</button>
+  </div>
+</div>
+
+<script>
+let donors = [];
+let needBlood = "";
+let needCity = "";
+
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function addDonor() {
+  let name = dname.value;
+  let blood = dblood.value;
+  let city = dcity.value;
+
+  if(name === "") { alert("Enter name"); return; }
+
+  donors.push({name, blood, city});
+  alert("Saved");
+  showPage("home");
+}
+
+function compatible(donor, need) {
+  if(need === "AB+") return true;
+  if(donor === "O-") return true;
+  if(donor === need) return true;
+  return false;
+}
+
+function search() {
+  needBlood = reqblood.value;
+  needCity = reqlocation.value;
+
+  // hide all pins
+  ["Kochi","Calicut","Trivandrum","Malappuram"].forEach(c=>{
+    document.getElementById("pin"+c).style.display = "none";
+  });
+
+  // show pin only if compatible donor exists there
+  ["Kochi","Calicut","Trivandrum","Malappuram"].forEach(c=>{
+    let found = donors.some(d => d.city === c && compatible(d.blood, needBlood));
+    if(found) document.getElementById("pin"+c).style.display = "block";
+  });
+
+  showPage("map");
+}
+
+function openCity(city) {
+  let list = donors.filter(d => d.city === city && compatible(d.blood, needBlood));
+
+  popTitle.innerText = "Donors in " + city;
+  popBody.innerHTML = "";
+
+  if(list.length === 0) {
+    popBody.innerHTML = "No compatible donors";
+  } else {
+    list.forEach(d=>{
+      popBody.innerHTML += `<div class="donor"><b>${d.name}</b><br>Blood: ${d.blood}</div>`;
+    });
+  }
+
+  document.getElementById("popup").style.display = "flex";
+}
+
+function closePop() {
+  document.getElementById("popup").style.display = "none";
+}
+</script>
+
+</body>
+</html>
