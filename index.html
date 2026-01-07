@@ -29,6 +29,7 @@
       transform: translate(-50%, -50%);
       border: 3px solid white;
       display: none;
+      cursor: pointer;
     }
 
     .pin-label {
@@ -64,7 +65,7 @@
 <body>
 
 <header>
-  <h2>🩸 RedAlert AI</h2>
+  <h2> RedAlert AI</h2>
 </header>
 
 <!-- HOME -->
@@ -80,6 +81,7 @@
   <div class="card">
     <h3>Register Donor</h3>
     <input id="dname" placeholder="Name">
+    <input id="dphone" placeholder="Phone Number">
     <select id="dblood">
       <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
       <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
@@ -130,7 +132,7 @@
       </div>
 
       <div class="pin" id="pinTrivandrum" style="top:80%; left:50%;" onclick="openCity('Trivandrum')">
-        <div class="pin-label">TVM</div>
+        <div class="pin-label">Trivandrum</div>
       </div>
 
       <div class="pin" id="pinMalappuram" style="top:40%; left:58%;" onclick="openCity('Malappuram')">
@@ -164,13 +166,14 @@ function showPage(id) {
 
 function addDonor() {
   let name = dname.value;
+  let phone = dphone.value;
   let blood = dblood.value;
   let city = dcity.value;
 
-  if(name === "") { alert("Enter name"); return; }
+  if(name === "" || phone === "") { alert("Enter all details"); return; }
 
-  donors.push({name, blood, city});
-  alert("Saved");
+  donors.push({name, phone, blood, city});
+  alert("Donor Registered!");
   showPage("home");
 }
 
@@ -185,12 +188,10 @@ function search() {
   needBlood = reqblood.value;
   needCity = reqlocation.value;
 
-  // hide all pins
   ["Kochi","Calicut","Trivandrum","Malappuram"].forEach(c=>{
     document.getElementById("pin"+c).style.display = "none";
   });
 
-  // show pin only if compatible donor exists there
   ["Kochi","Calicut","Trivandrum","Malappuram"].forEach(c=>{
     let found = donors.some(d => d.city === c && compatible(d.blood, needBlood));
     if(found) document.getElementById("pin"+c).style.display = "block";
@@ -209,7 +210,12 @@ function openCity(city) {
     popBody.innerHTML = "No compatible donors";
   } else {
     list.forEach(d=>{
-      popBody.innerHTML += `<div class="donor"><b>${d.name}</b><br>Blood: ${d.blood}</div>`;
+      popBody.innerHTML += `
+        <div class="donor">
+          <b>${d.name}</b><br>
+          Blood: ${d.blood}<br>
+          Phone: ${d.phone}
+        </div>`;
     });
   }
 
